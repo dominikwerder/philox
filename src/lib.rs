@@ -38,18 +38,16 @@ impl<N: Unsigned + ArrayLength<u32>, W: Unsigned, R: Unsigned, KN: ArrayLength<u
 		}
 		ctr
 	}
-	fn round(&mut self, key: &mut GenericArray<u32, KN>, mut ctr: &mut GenericArray<u32, N>) {
-		let c0 = ctr.clone();
+	fn round(&mut self, key: &mut GenericArray<u32, KN>, ctr: &mut GenericArray<u32, N>) {
 		// These constants were chosen just because the random numbers look statistically best
 		#[allow(non_upper_case_globals)] const PHILOX_M4x32_0: u32 = 0xD2511F53;
 		#[allow(non_upper_case_globals)] const PHILOX_M4x32_1: u32 = 0xCD9E8D57;
-		let HiLo(hi0, lo0) = mulhilo(PHILOX_M4x32_0, c0[0]);
-		let HiLo(hi1, lo1) = mulhilo(PHILOX_M4x32_1, c0[2]);
-		let c1 = &mut ctr;
-		c1[0] = hi1 ^ c0[1] ^ key[0];
-		c1[1] = lo1;
-		c1[2] = hi0 ^ c0[3] ^ key[1];
-		c1[3] = lo0;
+		let HiLo(hi0, lo0) = mulhilo(PHILOX_M4x32_0, ctr[0]);
+		let HiLo(hi1, lo1) = mulhilo(PHILOX_M4x32_1, ctr[2]);
+		ctr[0] = hi1 ^ ctr[1] ^ key[0];
+		ctr[2] = hi0 ^ ctr[3] ^ key[1];
+		ctr[1] = lo1;
+		ctr[3] = lo0;
 	}
 	fn update_key(&mut self, key: &mut GenericArray<u32, KN>) {
 		const C0: u32 = 0x9E3779B9;
