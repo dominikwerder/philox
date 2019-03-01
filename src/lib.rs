@@ -1,17 +1,27 @@
-use typenum::{Unsigned, U2, U4, U8, U10, U32, U64};
+#[allow(unused)]
+use typenum::{Unsigned, U2, U4, U8, U10, U32, U64, Same, UInt};
 use generic_array::{ArrayLength, GenericArray};
 use std::ops::{Mul, Div};
 
-type TA = u8;
-
 type Ph<N, W, R> = Philox<N, W, R, <N as Div<U8>>::Output>;
 
-#[derive(Default)]
-pub struct Philox<N, W, R, NA: ArrayLength<TA>> {
-	_key: GenericArray<TA, NA>,
+pub struct Philox<N: Unsigned, W: Unsigned, R: Unsigned, NA: ArrayLength<u32>> {
+	_key: GenericArray<u32, NA>,
 	_m1: std::marker::PhantomData<N>,
 	_m2: std::marker::PhantomData<W>,
 	_m3: std::marker::PhantomData<R>,
+}
+
+impl<N: Unsigned, W: Unsigned, R: Unsigned, NA: ArrayLength<u32>> Default for Philox<N, W, R, NA> {
+	fn default() -> Self {
+		assert_eq!(W::to_usize(), 32);
+		Self {
+			_key: Default::default(),
+			_m1: Default::default(),
+			_m2: Default::default(),
+			_m3: Default::default(),
+		}
+	}
 }
 
 #[test] fn a() {
