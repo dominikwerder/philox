@@ -9,3 +9,4 @@ doctest = false
 [dependencies]
 generic-array = "0.12"
 typenum = "1.10"
+hex = "0.3.2"
