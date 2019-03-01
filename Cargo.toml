@@ -1,6 +1,7 @@
 [project]
 name = "philox"
 version = "0.0.0"
+authors = ["Dominik Werder <dominik.werder@gmail.com>"]
 edition = "2018"
 
 [lib]
