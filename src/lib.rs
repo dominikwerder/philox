@@ -16,7 +16,7 @@ pub struct Philox<N: Unsigned + ArrayLength<u32>, W: Unsigned, R: Unsigned, KN: 
 struct HiLo(u32, u32);
 
 fn mulhilo(a: u32, b: u32) -> HiLo {
-	let p = a as u64 * b as u64;
+	let p = (a as u64).wrapping_mul(b as u64);
 	HiLo((p >> 32) as u32, p as u32)
 }
 
@@ -44,8 +44,8 @@ impl<N: Unsigned + ArrayLength<u32>, W: Unsigned, R: Unsigned, KN: ArrayLength<u
 	fn update_key(&mut self, key: &mut GenericArray<u32, KN>) {
 		const C0: u32 = 0x9E3779B9;
 		const C1: u32 = 0xBB67AE85;
-		key[0] = key[0].overflowing_add(C0).0; // golden ratio
-		key[1] = key[1].overflowing_add(C1).0; // sqrt(3) - 1
+		key[0] = key[0].wrapping_add(C0); // golden ratio
+		key[1] = key[1].wrapping_add(C1); // sqrt(3) - 1
 	}
 }
 
@@ -66,13 +66,16 @@ struct Counter(GenericArray<u32, U4>);
 impl Counter {
 	fn inc(&mut self) {
 		let ctr = &mut self.0;
-		ctr[0] = ctr[0].overflowing_add(1).0;
+		ctr[0] = ctr[0].wrapping_add(1);
 		if ctr[0] == 0 {
-			ctr[1] = ctr[1].overflowing_add(1).0;
-			if ctr[1] == 0 {
-				ctr[2] = ctr[2].overflowing_add(1).0;
-				if ctr[2] == 0 {
-					ctr[3] = ctr[3].overflowing_add(1).0;
+			let x = ctr[1].overflowing_add(1);
+			ctr[1] = x.0;
+			if x.1 {
+				let x = ctr[2].overflowing_add(1);
+				ctr[2] = x.0;
+				if x.1 {
+					let x = ctr[3].overflowing_add(1);
+					ctr[3] = x.0;
 				}
 			}
 		}
@@ -140,5 +143,6 @@ fn parse_test_vector(s: &str) -> (GenericArray<u32, U2>, GenericArray<u32, U4>, 
 	let t2 = std::time::Instant::now();
 	let dt = t2 - t1;
 	let secs = dt.as_secs() as f32 + 1e-3 * dt.subsec_millis() as f32;
-	assert_eq!("", format!("Duration: {:?}  MB/s: {:.0}", secs, (nn as f32 * 16.) / secs / 1024.0 / 1024.0));
+	//assert_eq!("", format!("Duration: {:?}  MB/s: {:.0}", secs, (nn as f32 * 16.) / secs / 1024.0 / 1024.0));
+	assert!(secs < 2.0);
 }
