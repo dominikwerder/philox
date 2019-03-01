@@ -17,6 +17,7 @@ struct HiLo(u32, u32);
 fn mulhilo(a: u32, b: u32) -> HiLo {
 	let p = a as u64 * b as u64;
 	HiLo((p >> 32) as u32, p as u32)
+	//HiLo(p as u32, (p >> 32) as u32, )
 }
 
 impl<N: Unsigned + ArrayLength<u32>, W: Unsigned, R: Unsigned, KN: ArrayLength<u32>> Philox<N, W, R, KN> {
@@ -30,8 +31,10 @@ impl<N: Unsigned + ArrayLength<u32>, W: Unsigned, R: Unsigned, KN: ArrayLength<u
 	fn round(&mut self, key: &mut GenericArray<u32, KN>, mut ctr: &mut GenericArray<u32, N>) {
 		let c0 = ctr.clone();
 		// These constants were chosen just because the random numbers look statistically best
-		let HiLo(hi0, lo0) = mulhilo(0xD2511F53, c0[0]);
-		let HiLo(hi1, lo1) = mulhilo(0xCD9E8D57, c0[2]);
+		#[allow(non_upper_case_globals)] const PHILOX_M4x32_0: u32 = 0xD2511F53;
+		#[allow(non_upper_case_globals)] const PHILOX_M4x32_1: u32 = 0xCD9E8D57;
+		let HiLo(hi0, lo0) = mulhilo(PHILOX_M4x32_0, c0[0]);
+		let HiLo(hi1, lo1) = mulhilo(PHILOX_M4x32_1, c0[2]);
 		let c1 = &mut ctr;
 		c1[0] = hi1 ^ c0[1] ^ key[0];
 		c1[1] = lo1;
@@ -95,24 +98,35 @@ fn parse_test_vector(s: &str) -> (GenericArray<u32, U2>, GenericArray<u32, U4>, 
 }
 
 #[test] fn generate_key_zeros() {
+	use std::iter::FromIterator;
 	let vectors = "
 	philox4x32 10 00000000 00000000 00000000 00000000 00000000 00000000 6627e8d5 e169c58d bc57ac4c 9b00dbd8
 	philox4x32 10 ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff 408f276d 41c83b0e a20bc7c6 6d5451fd
 	philox4x32 10 243f6a88 85a308d3 13198a2e 03707344 a4093822 299f31d0 d16cfe09 94fdcceb 5001e420 24126ea1
 	".trim().split("\n").map(|x|x.trim()).collect::<Vec<_>>();
 	eprintln!("{:?}", vectors);
-	for v in &vectors[..3] {
+	for v in &vectors[..] {
 		let v = parse_test_vector(v);
 		let mut ph = Ph::<U4, U32, U10>::default();
+		let v2_k = GenericArray::<u32, U2>::from_iter(v.0.iter()
+			.map(|x|*x)
+			//.map(|x|x.swap_bytes())
+			//.rev()
+		);
+		let v2_c = GenericArray::<u32, U4>::from_iter(v.1.iter()
+			.map(|x|*x)
+			//.map(|x|x.swap_bytes())
+			//.rev()
+		);
 		for x in &v.0 {
 			eprintln!("k {:08x}", x);
 		}
 		for x in &v.1 {
 			eprintln!("c {:08x}", x);
 		}
-		let r = ph.next(v.0, v.1);
-		for x in &r {
-			eprintln!("r {:08x}", x);
+		let r = ph.next(v2_k, v2_c);
+		for (x, y) in r.iter().zip(v.2) {
+			eprintln!("r {:08x} {:08x}", x, y);
 		}
 		assert_eq!(r.as_slice(), v.2.as_slice());
 	}
