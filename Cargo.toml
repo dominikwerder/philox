@@ -6,6 +6,7 @@ edition = "2018"
 keywords = ["random", "rng"]
 categories = ["algorithms", "science"]
 license = "MIT"
+repository = "https://github.com/dominikwerder/philox"
 
 [lib]
 doctest = false
