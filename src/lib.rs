@@ -60,7 +60,25 @@ impl<N: Unsigned + ArrayLength<u32>, W: Unsigned, R: Unsigned, KN: Unsigned + Ar
 	}
 }
 
-#[test] fn a() {
+struct Counter(GenericArray<u32, U4>);
+
+impl Counter {
+	fn inc(&mut self) {
+		let ctr = &mut self.0;
+		ctr[0] = ctr[0].overflowing_add(1).0;
+		if ctr[0] == 0 {
+			ctr[1] = ctr[1].overflowing_add(1).0;
+			if ctr[1] == 0 {
+				ctr[2] = ctr[2].overflowing_add(1).0;
+				if ctr[2] == 0 {
+					ctr[3] = ctr[3].overflowing_add(1).0;
+				}
+			}
+		}
+	}
+}
+
+#[test] fn typenum() {
 	assert_eq!(U64::to_u32(), 64);
 	assert_eq!(<U64 as Div<U8>>::Output::to_u32(), 8);
 	assert_eq!(<U64 as Mul<U2>>::Output::to_u32(), 128);
@@ -74,7 +92,6 @@ impl<N: Unsigned + ArrayLength<u32>, W: Unsigned, R: Unsigned, KN: Unsigned + Ar
 
 fn parse_test_vector(s: &str) -> (GenericArray<u32, U2>, GenericArray<u32, U4>, GenericArray<u32, U4>) {
 	let a: Vec<_> = s.split(" ").map(|x| x.trim()).collect();
-	eprintln!("{:?}", a);
 	type T = u32;
 	fn p(s: &str) -> T {
 		T::from_str_radix(s, 16).unwrap()
@@ -107,4 +124,20 @@ fn parse_test_vector(s: &str) -> (GenericArray<u32, U2>, GenericArray<u32, U4>, 
 		let r = ph.next(v.0, v.1);
 		assert_eq!(r.as_slice(), v.2.as_slice());
 	}
+}
+
+#[test] fn speed() {
+	let t1 = std::time::Instant::now();
+	let mut ph = Ph::<U4, U32, U10>::default();
+	let key = GenericArray::from_slice(&[0, 0]);
+	let mut ctr = Counter(GenericArray::default());
+	let nn = 10000000;
+	for _ in 0..nn {
+		ph.next(key.clone(), ctr.0.clone());
+		ctr.inc();
+	}
+	let t2 = std::time::Instant::now();
+	let dt = t2 - t1;
+	let secs = dt.as_secs() as f32 + 1e-3 * dt.subsec_millis() as f32;
+	assert_eq!("", format!("Duration: {:?}  MB/s: {:.0}", secs, (nn as f32 * 16.) / secs / 1024.0 / 1024.0));
 }
