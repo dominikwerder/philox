@@ -57,7 +57,7 @@ fn parse_test_vector(s: &str) -> (GenericArray<u32, U2>, GenericArray<u32, U4>, 
 	assert_eq!(v.0.as_slice(), &[0xa4093822, 0x299f31d0]);
 }
 
-#[test] fn generate_key_zeros() {
+#[test] fn check_test_vectors() {
 	let vectors = "
 	philox4x32 10 00000000 00000000 00000000 00000000 00000000 00000000 6627e8d5 e169c58d bc57ac4c 9b00dbd8
 	philox4x32 10 ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff 408f276d 41c83b0e a20bc7c6 6d5451fd
