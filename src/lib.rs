@@ -17,7 +17,6 @@ struct HiLo(u32, u32);
 fn mulhilo(a: u32, b: u32) -> HiLo {
 	let p = a as u64 * b as u64;
 	HiLo((p >> 32) as u32, p as u32)
-	//HiLo(p as u32, (p >> 32) as u32, )
 }
 
 impl<N: Unsigned + ArrayLength<u32>, W: Unsigned, R: Unsigned, KN: ArrayLength<u32>> Philox<N, W, R, KN> {
@@ -42,23 +41,22 @@ impl<N: Unsigned + ArrayLength<u32>, W: Unsigned, R: Unsigned, KN: ArrayLength<u
 		c1[3] = lo0;
 	}
 	fn update_key(&mut self, key: &mut GenericArray<u32, KN>) {
-		key[0] = key[0].overflowing_add(0x9E3779B9).0; // golden ratio
-		key[1] = key[1].overflowing_add(0xBB67AE85).0; // sqrt(3) - 1
+		const C0: u32 = 0x9E3779B9;
+		const C1: u32 = 0xBB67AE85;
+		key[0] = key[0].overflowing_add(C0).0; // golden ratio
+		key[1] = key[1].overflowing_add(C1).0; // sqrt(3) - 1
 	}
 }
 
 impl<N: Unsigned + ArrayLength<u32>, W: Unsigned, R: Unsigned, KN: Unsigned + ArrayLength<u32>> Default for Philox<N, W, R, KN> {
 	fn default() -> Self {
 		assert_eq!(W::to_usize(), 32);
-		let x = Self {
+		Self {
 			_m0: Default::default(),
 			_m1: Default::default(),
 			_m2: Default::default(),
 			_m3: Default::default(),
-		};
-		//assert_eq!(x.ctr.len(), N::to_usize());
-		//assert_eq!(x.key.len(), KN::to_usize());
-		x
+		}
 	}
 }
 
@@ -74,9 +72,6 @@ impl<N: Unsigned + ArrayLength<u32>, W: Unsigned, R: Unsigned, KN: Unsigned + Ar
 	assert_eq!(0x12345678cafe1337_u64 as u32, 0xcafe1337_u32);
 }
 
-/*
-*/
-
 fn parse_test_vector(s: &str) -> (GenericArray<u32, U2>, GenericArray<u32, U4>, GenericArray<u32, U4>) {
 	let a: Vec<_> = s.split(" ").map(|x| x.trim()).collect();
 	eprintln!("{:?}", a);
@@ -85,49 +80,31 @@ fn parse_test_vector(s: &str) -> (GenericArray<u32, U2>, GenericArray<u32, U4>, 
 		T::from_str_radix(s, 16).unwrap()
 	}
 	(
-		[p(a[2]), p(a[3])].into(),
-		[p(a[4]), p(a[5]), p(a[6]), p(a[7])].into(),
+		[p(a[6]), p(a[7])].into(),
+		[p(a[2]), p(a[3]), p(a[4]), p(a[5])].into(),
 		[p(a[8]), p(a[9]), p(a[10]), p(a[11])].into(),
 	)
 }
 
 #[test] fn test_parse_test_vector() {
+	/*
+	Test vectors contain first the counter, then the key, then the result.
+	*/
 	let s = "philox4x32 10 243f6a88 85a308d3 13198a2e 03707344 a4093822 299f31d0 d16cfe09 94fdcceb 5001e420 24126ea1";
 	let v = parse_test_vector(s);
-	assert_eq!(v.0.as_slice(), &[0x243f6a88, 0x85a308d3]);
+	assert_eq!(v.0.as_slice(), &[0xa4093822, 0x299f31d0]);
 }
 
 #[test] fn generate_key_zeros() {
-	use std::iter::FromIterator;
 	let vectors = "
 	philox4x32 10 00000000 00000000 00000000 00000000 00000000 00000000 6627e8d5 e169c58d bc57ac4c 9b00dbd8
 	philox4x32 10 ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff 408f276d 41c83b0e a20bc7c6 6d5451fd
 	philox4x32 10 243f6a88 85a308d3 13198a2e 03707344 a4093822 299f31d0 d16cfe09 94fdcceb 5001e420 24126ea1
 	".trim().split("\n").map(|x|x.trim()).collect::<Vec<_>>();
-	eprintln!("{:?}", vectors);
 	for v in &vectors[..] {
 		let v = parse_test_vector(v);
 		let mut ph = Ph::<U4, U32, U10>::default();
-		let v2_k = GenericArray::<u32, U2>::from_iter(v.0.iter()
-			.map(|x|*x)
-			//.map(|x|x.swap_bytes())
-			//.rev()
-		);
-		let v2_c = GenericArray::<u32, U4>::from_iter(v.1.iter()
-			.map(|x|*x)
-			//.map(|x|x.swap_bytes())
-			//.rev()
-		);
-		for x in &v.0 {
-			eprintln!("k {:08x}", x);
-		}
-		for x in &v.1 {
-			eprintln!("c {:08x}", x);
-		}
-		let r = ph.next(v2_k, v2_c);
-		for (x, y) in r.iter().zip(v.2) {
-			eprintln!("r {:08x} {:08x}", x, y);
-		}
+		let r = ph.next(v.0, v.1);
 		assert_eq!(r.as_slice(), v.2.as_slice());
 	}
 }
