@@ -63,7 +63,7 @@ fn parse_test_vector(s: &str) -> (GenericArray<u32, U2>, GenericArray<u32, U4>, 
 	philox4x32 10 ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff 408f276d 41c83b0e a20bc7c6 6d5451fd
 	philox4x32 10 243f6a88 85a308d3 13198a2e 03707344 a4093822 299f31d0 d16cfe09 94fdcceb 5001e420 24126ea1
 	".trim().split("\n").map(|x|x.trim()).collect::<Vec<_>>();
-	for v in &vectors[..] {
+	for v in &vectors {
 		let v = parse_test_vector(v);
 		let mut ph = Ph::<U4, U32, U10>::default();
 		let r = ph.next(v.0, v.1);
