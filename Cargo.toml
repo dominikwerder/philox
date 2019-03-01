@@ -4,6 +4,8 @@ version = "0.0.0"
 authors = ["Dominik Werder <dominik.werder@gmail.com>"]
 edition = "2018"
 keywords = ["random", "rng"]
+categories = ["algorithms", "science"]
+license = "MIT"
 
 [lib]
 doctest = false
