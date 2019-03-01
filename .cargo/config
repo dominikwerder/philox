@@ -1,0 +1,14 @@
+[build]
+
+# Performance varies between 220 and 350, try to find out which feature is responsible.
+# Enabling 'sha' alone gives 350.
+
+rustflags = [
+	"-Clto=thin",
+	"-Ctarget-cpu=native",
+	#"-Ctarget-feature=+mmx,+fma,+fma4,+lwp,+prefer-256-bit,+prfchw,+avx,+avx2,+cmov,-avx512f,-avx512bw,+sse,+sse2,+sse3,+sse4.1,+sse4.2,+aes,+sse4a,+retpoline,+sha",
+
+	"-Ctarget-feature=-mmx,-fma,-fma4,-lwp,-prfchw,-avx,-avx2,-cmov,-avx512f,-avx512bw,-sse,-sse2,-sse3,-sse4.1,-sse4.2,-aes,-sse4a,-sha,-retpoline",
+
+	"-Copt-level=3", "-Cdebuginfo=0",
+]

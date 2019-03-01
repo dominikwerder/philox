@@ -4,6 +4,7 @@ use generic_array::{ArrayLength, GenericArray};
 use std::ops::{Mul, Div};
 
 type Ph<N, W, R> = Philox<N, W, R, <N as Div<U2>>::Output>;
+type Philox4x32_10 = Ph<U4, U32, U10>;
 
 pub struct Philox<N: Unsigned + ArrayLength<u32>, W: Unsigned, R: Unsigned, KN: ArrayLength<u32>> {
 	_m0: std::marker::PhantomData<N>,
@@ -128,8 +129,8 @@ fn parse_test_vector(s: &str) -> (GenericArray<u32, U2>, GenericArray<u32, U4>, 
 
 #[test] fn speed() {
 	let t1 = std::time::Instant::now();
-	let mut ph = Ph::<U4, U32, U10>::default();
-	let key = GenericArray::from_slice(&[0, 0]);
+	let mut ph = Philox4x32_10::default();
+	let key = GenericArray::from_slice(&[2, 6]);
 	let mut ctr = Counter(GenericArray::default());
 	let nn = 10000000;
 	for _ in 0..nn {
