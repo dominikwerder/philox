@@ -25,6 +25,8 @@ impl<N: Unsigned + ArrayLength<u32>, W: Unsigned, R: Unsigned, KN: ArrayLength<u
 	fn update(&mut self) {
 	}
 	fn update_key(&mut self) {
+		self.key[0].overflowing_add(0x9E3779B9); // golden ratio
+		self.key[1].overflowing_add(0xBB67AE85); // sqrt(3) - 1
 	}
 }
 
