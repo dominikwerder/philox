@@ -8,13 +8,23 @@ type Ph<N, W, R> = Philox<N, W, R, <N as Div<U2>>::Output>;
 pub struct Philox<N: Unsigned + ArrayLength<u32>, W: Unsigned, R: Unsigned, KN: ArrayLength<u32>> {
 	ctr: GenericArray<u32, N>,
 	key: GenericArray<u32, KN>,
-	_m1: std::marker::PhantomData<N>,
 	_m2: std::marker::PhantomData<W>,
 	_m3: std::marker::PhantomData<R>,
 }
 
 impl<N: Unsigned + ArrayLength<u32>, W: Unsigned, R: Unsigned, KN: ArrayLength<u32>> Philox<N, W, R, KN> {
-	pub fn next(&mut self) {
+	pub fn next(&mut self, _ctr: GenericArray<u32, N>) -> GenericArray<u32, N> {
+		for i in 0..R::USIZE {
+			if i > 0 {
+				self.update_key();
+			}
+			self.update();
+		}
+		self.ctr.clone()
+	}
+	fn update(&mut self) {
+	}
+	fn update_key(&mut self) {
 	}
 }
 
@@ -24,7 +34,6 @@ impl<N: Unsigned + ArrayLength<u32>, W: Unsigned, R: Unsigned, KN: Unsigned + Ar
 		let x = Self {
 			ctr: Default::default(),
 			key: Default::default(),
-			_m1: Default::default(),
 			_m2: Default::default(),
 			_m3: Default::default(),
 		};
