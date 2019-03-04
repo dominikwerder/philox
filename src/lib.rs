@@ -11,7 +11,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 
 use typenum::{Unsigned, U2, U4, U10, U32};
-use generic_array::{ArrayLength, GenericArray};
+pub use generic_array::{ArrayLength, GenericArray};
 
 type Ph<N, W, R> = Philox<N, W, R, <N as std::ops::Div<U2>>::Output>;
 pub type Philox4x32_10 = Ph<U4, U32, U10>;

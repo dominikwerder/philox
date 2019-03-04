@@ -1,27 +1,6 @@
 use typenum::{Unsigned, U2, U4, U8, U10, U32, U64};
 use generic_array::GenericArray;
-use super::{Ph, Philox4x32_10};
-
-struct Counter(GenericArray<u32, U4>);
-
-impl Counter {
-	fn inc(&mut self) {
-		let ctr = &mut self.0;
-		ctr[0] = ctr[0].wrapping_add(1);
-		if ctr[0] == 0 {
-			let x = ctr[1].overflowing_add(1);
-			ctr[1] = x.0;
-			if x.1 {
-				let x = ctr[2].overflowing_add(1);
-				ctr[2] = x.0;
-				if x.1 {
-					let x = ctr[3].overflowing_add(1);
-					ctr[3] = x.0;
-				}
-			}
-		}
-	}
-}
+use super::Ph;
 
 #[test] fn typenum() {
 	assert_eq!(U64::to_u32(), 64);
@@ -70,21 +49,3 @@ fn parse_test_vector(s: &str) -> (GenericArray<u32, U2>, GenericArray<u32, U4>, 
 		assert_eq!(r.as_slice(), v.2.as_slice());
 	}
 }
-
-#[test] fn speed() {
-	let t1 = std::time::Instant::now();
-	let mut ph = Philox4x32_10::default();
-	let key = GenericArray::from_slice(&[2, 6]);
-	let mut ctr = Counter(GenericArray::default());
-	let nn = 10000000;
-	for _ in 0..nn {
-		ph.next(key.clone(), ctr.0.clone());
-		ctr.inc();
-	}
-	let t2 = std::time::Instant::now();
-	let dt = t2 - t1;
-	let secs = dt.as_secs() as f32 + 1e-3 * dt.subsec_millis() as f32;
-	//assert_eq!("", format!("Duration: {:?}  MB/s: {:.0}", secs, (nn as f32 * 16.) / secs / 1024.0 / 1024.0));
-	assert!(secs < 2.0);
-}
-
