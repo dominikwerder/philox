@@ -83,14 +83,14 @@ impl<N: Unsigned + ArrayLength<u32> + Shr, W: Unsigned, R: Unsigned, KN: ArrayLe
     self.ctr.inc();
     ctr
   }
-  pub fn next_bytes(&mut self) -> &GenericArray<u8, U16> {
+  pub fn next_bytes(&mut self) -> GenericArray<u8, U16> {
     // TODO make generic, but somehow can not divide typenum in return type
     type _AB1 = <U4 as Shl<U2>>::Output;
     type _AB2 = <U4 as Shr<U2>>::Output;
     assert_eq!(N::to_usize(), 4);
     assert_eq!(W::to_usize(), 32);
     let x = self.next();
-    unsafe { &*(x.as_ptr() as *const GenericArray<u8, U16>) }
+    unsafe { *(x.as_ptr() as *const GenericArray<u8, U16>) }
   }
   fn round(&mut self, key: &mut GenericArray<u32, KN>, ctr: &mut GenericArray<u32, N>) {
     // These constants were chosen just because the random numbers look statistically best
@@ -148,16 +148,36 @@ fn parse_test_vector(s: &str) -> (GenericArray<u32, U2>, GenericArray<u32, U4>, 
   assert_eq!(v.0.as_slice(), &[0xa4093822, 0x299f31d0]);
 }
 
-#[test] fn check_test_vectors() {
-  let vectors = "
+#[cfg(test)]
+fn split_test_vectors() -> Vec<String> {
+  "
   philox4x32 10 00000000 00000000 00000000 00000000 00000000 00000000 6627e8d5 e169c58d bc57ac4c 9b00dbd8
   philox4x32 10 ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff 408f276d 41c83b0e a20bc7c6 6d5451fd
   philox4x32 10 243f6a88 85a308d3 13198a2e 03707344 a4093822 299f31d0 d16cfe09 94fdcceb 5001e420 24126ea1
-  ".trim().split("\n").map(|x|x.trim()).collect::<Vec<_>>();
-  for v in &vectors {
+  ".trim().split("\n").map(|x|x.trim().to_string()).collect()
+}
+
+#[test] fn check_test_vectors_array_u32() {
+  for v in &split_test_vectors() {
     let v = parse_test_vector(v);
     let mut ph = Ph::<U4, U32, U10>::from_key(v.0).set_ctr(v.1);
     let r = ph.next();
     assert_eq!(r.as_slice(), v.2.as_slice());
+  }
+}
+
+#[test] fn check_test_vectors_bytes() {
+  for v in &split_test_vectors() {
+    let v = parse_test_vector(v);
+    let mut ph = Ph::<U4, U32, U10>::from_key(v.0).set_ctr(v.1);
+    let r = ph.next_bytes();
+    use std::mem::transmute as tr;
+    let r = unsafe { [
+      tr::<_, u32>(*(&r[0] as *const _ as *const [u8;4])),
+      tr::<_, u32>(*(&r[4] as *const _ as *const [u8;4])),
+      tr::<_, u32>(*(&r[8] as *const _ as *const [u8;4])),
+      tr::<_, u32>(*(&r[12] as *const _ as *const [u8;4])),
+    ] };
+    assert_eq!(&r, v.2.as_slice());
   }
 }
