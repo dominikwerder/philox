@@ -23,9 +23,13 @@ impl Counter {
   }
 }
 
-#[test] fn speed() {
+/*
+Record some intermediate values from the stream to cross check after refactoring.
+*/
+#[test] fn record_values() {
+  let record_every = 0x8ff;
   use std::io::Write;
-  let mut f1 = std::fs::File::create("2-6-0xffth").unwrap();
+  let mut f1 = std::fs::File::create(format!("2-6-{:x}-01", record_every)).unwrap();
   let mut ph = Philox4x32_10::default();
   let key = GenericArray::from_slice(&[2, 6]);
   let mut ctr = Counter(GenericArray::default());
@@ -34,14 +38,15 @@ impl Counter {
   loop {
     let r = ph.next(key.clone(), ctr.0.clone());
     ctr.inc();
-    if ctr.0[0] & 0x7fff == 0 {
-      if now() - t1 > std::time::Duration::from_millis(1500) {
-        //break;
-      }
-    }
-    if ctr.0[0] & 0xff == 0 {
-      write!(f1, "{:08x} {:08x} {:08x} {:08x}\n", r[3], r[2], r[1], r[0]).unwrap();
-      if ctr.0[0] >= 0x100000 {
+    if ctr.0[0] & record_every == 0 {
+      // be safe
+      assert_eq!(r.len(), 4);
+      // note: adding a scope between ref and deref would cause copy
+      let a = unsafe { &*(&r[0] as *const _ as *const [u8; 4 * 4]) };
+      // make sure that we did not copy
+      assert_eq!(&a[0] as *const _ as *const u8, &r[0] as *const _ as *const u8);
+      f1.write(a).unwrap();
+      if ctr.0[0] & 0xfffff == 0 {
         break;
       }
     }
@@ -52,8 +57,23 @@ impl Counter {
   eprintln!("Duration: {:?}  MB/s: {:.0}", secs, (nn as f32 * 16.) / secs / 1024.0 / 1024.0);
 }
 
-fn main() {
-  if std::env::args().len() == 1 {
-    speed();
+#[test] fn speed() {
+  let mut ph = Philox4x32_10::default();
+  let key = GenericArray::from_slice(&[2, 6]);
+  let mut ctr = Counter(GenericArray::default());
+  let now = std::time::Instant::now;
+  let t1 = now();
+  loop {
+    ph.next(key.clone(), ctr.0.clone());
+    ctr.inc();
+    if ctr.0[0] & 0x7fff == 0 {
+      if now() - t1 > std::time::Duration::from_millis(1500) {
+        break;
+      }
+    }
   }
+  let dt = now() - t1;
+  let secs = dt.as_secs() as f32 + 1e-3 * dt.subsec_millis() as f32;
+  let nn = ((ctr.0[1] as u64) << 32) + ctr.0[0] as u64;
+  eprintln!("Duration: {:?}  MB/s: {:.0}", secs, (nn as f32 * 16.) / secs / 1024.0 / 1024.0);
 }
