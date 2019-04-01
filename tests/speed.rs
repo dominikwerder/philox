@@ -24,16 +24,24 @@ impl Counter {
 }
 
 #[test] fn speed() {
+  use std::io::Write;
+  let mut f1 = std::fs::File::create("2-6-0xffth").unwrap();
   let mut ph = Philox4x32_10::default();
   let key = GenericArray::from_slice(&[2, 6]);
   let mut ctr = Counter(GenericArray::default());
   let now = std::time::Instant::now;
   let t1 = now();
   loop {
-    ph.next(key.clone(), ctr.0.clone());
+    let r = ph.next(key.clone(), ctr.0.clone());
     ctr.inc();
     if ctr.0[0] & 0x7fff == 0 {
       if now() - t1 > std::time::Duration::from_millis(1500) {
+        //break;
+      }
+    }
+    if ctr.0[0] & 0xff == 0 {
+      write!(f1, "{:08x} {:08x} {:08x} {:08x}\n", r[3], r[2], r[1], r[0]).unwrap();
+      if ctr.0[0] >= 0x100000 {
         break;
       }
     }
