@@ -29,7 +29,7 @@ Record some intermediate values from the stream to cross check after refactoring
 #[test] fn record_values() {
   let record_every = 0x8ff;
   use std::io::Write;
-  let mut f1 = std::fs::File::create(format!("2-6-{:x}-01", record_every)).unwrap();
+  let mut f1 = std::fs::File::create(format!("2-6-{:x}-02", record_every)).unwrap();
   let mut ph = Philox4x32_10::default();
   let key = GenericArray::from_slice(&[2, 6]);
   let mut ctr = Counter(GenericArray::default());
