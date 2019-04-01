@@ -13,12 +13,34 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 use typenum::{Unsigned, U2, U4, U10, U32};
 pub use generic_array::{ArrayLength, GenericArray};
 
+pub struct Counter<N: Unsigned + ArrayLength<u32>>(pub GenericArray<u32, N>);
+
+impl<N: Unsigned + ArrayLength<u32>> Counter<N> {
+  fn inc(&mut self) {
+    let ctr = &mut self.0;
+    let x = ctr[0].overflowing_add(1);
+    ctr[0] = x.0;
+    if x.1 {
+      let x = ctr[1].overflowing_add(1);
+      ctr[1] = x.0;
+      if x.1 {
+        let x = ctr[2].overflowing_add(1);
+        ctr[2] = x.0;
+        if x.1 {
+          let x = ctr[3].overflowing_add(1);
+          ctr[3] = x.0;
+        }
+      }
+    }
+  }
+}
+
 type Ph<N, W, R> = Philox<N, W, R, <N as std::ops::Div<U2>>::Output>;
 pub type Philox4x32_10 = Ph<U4, U32, U10>;
 
 pub struct Philox<N: Unsigned + ArrayLength<u32>, W: Unsigned, R: Unsigned, KN: ArrayLength<u32>> {
-  _m0: std::marker::PhantomData<N>,
-  _m1: std::marker::PhantomData<KN>,
+  key: GenericArray<u32, KN>,
+  ctr: Counter<N>,
   _m2: std::marker::PhantomData<W>,
   _m3: std::marker::PhantomData<R>,
 }
@@ -31,11 +53,27 @@ fn mulhilo(a: u32, b: u32) -> HiLo {
 }
 
 impl<N: Unsigned + ArrayLength<u32>, W: Unsigned, R: Unsigned, KN: ArrayLength<u32>> Philox<N, W, R, KN> {
-  pub fn next(&mut self, mut key: GenericArray<u32, KN>, mut ctr: GenericArray<u32, N>) -> GenericArray<u32, N> {
+  pub fn from_key(key: GenericArray<u32, KN>) -> Self {
+    assert_eq!(W::to_usize(), 32);
+    Self {
+      key,
+      ctr: Counter(Default::default()),
+      _m2: Default::default(),
+      _m3: Default::default(),
+    }
+  }
+  pub fn set_ctr(mut self, ctr: GenericArray<u32, N>) -> Self {
+    self.ctr = Counter(ctr);
+    self
+  }
+  pub fn next(&mut self) -> GenericArray<u32, N> {
+    let mut key = self.key.clone();
+    let mut ctr = self.ctr.0.clone();
     for _ in 0..R::USIZE {
       self.round(&mut key, &mut ctr);
       self.update_key(&mut key);
     }
+    self.ctr.inc();
     ctr
   }
   fn round(&mut self, key: &mut GenericArray<u32, KN>, ctr: &mut GenericArray<u32, N>) {
@@ -55,18 +93,7 @@ impl<N: Unsigned + ArrayLength<u32>, W: Unsigned, R: Unsigned, KN: ArrayLength<u
     key[0] = key[0].wrapping_add(C0); // golden ratio
     key[1] = key[1].wrapping_add(C1); // sqrt(3) - 1
   }
-}
-
-impl<N: Unsigned + ArrayLength<u32>, W: Unsigned, R: Unsigned, KN: Unsigned + ArrayLength<u32>> Default for Philox<N, W, R, KN> {
-  fn default() -> Self {
-    assert_eq!(W::to_usize(), 32);
-    Self {
-      _m0: Default::default(),
-      _m1: Default::default(),
-      _m2: Default::default(),
-      _m3: Default::default(),
-    }
-  }
+  pub fn ctr(&self) -> &Counter<N> { &self.ctr }
 }
 
 #[cfg(test)] mod test;

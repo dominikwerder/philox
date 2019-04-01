@@ -44,8 +44,8 @@ fn parse_test_vector(s: &str) -> (GenericArray<u32, U2>, GenericArray<u32, U4>, 
   ".trim().split("\n").map(|x|x.trim()).collect::<Vec<_>>();
   for v in &vectors {
     let v = parse_test_vector(v);
-    let mut ph = Ph::<U4, U32, U10>::default();
-    let r = ph.next(v.0, v.1);
+    let mut ph = Ph::<U4, U32, U10>::from_key(v.0).set_ctr(v.1);
+    let r = ph.next();
     assert_eq!(r.as_slice(), v.2.as_slice());
   }
 }
