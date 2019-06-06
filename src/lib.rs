@@ -60,6 +60,9 @@ fn mulhilo(a: u32, b: u32) -> HiLo {
 }
 
 impl<N: Unsigned + ArrayLength<u32> + Shr, W: Unsigned, R: Unsigned, KN: ArrayLength<u32>> Philox<N, W, R, KN> {
+  pub fn key_default() -> GenericArray<u32, KN> {
+    Default::default()
+  }
   pub fn from_key(key: GenericArray<u32, KN>) -> Self {
     assert_eq!(W::to_usize(), 32);
     Self {
